@@ -23,6 +23,9 @@ from PyQt5.QtCore import (
 )
 from settings.json_settings import load_settings, write_default_json
 
+from core.cpgetter import get_dict_products
+from core.listener import listen_usb
+
 
 class CPViewerWidget(QWidget):
     """Widget permettant de changer les paramètres de l'application.
@@ -47,64 +50,29 @@ class CPViewerWidget(QWidget):
 
         # Mise en place de l'interface utilisateur
         self.setLayout(QVBoxLayout())
-        self.color_groupbox = QGroupBox("Couleurs affichées")
-        self.color_layout = QVBoxLayout()
-        self.color_groupbox.setLayout(self.color_layout)
+        self.devices_groupbox = QGroupBox("Devices Available")
+        self.devices_layout = QVBoxLayout()
+        self.devices_groupbox.setLayout(self.devices_layout)
 
-        # Création des widgets de modification de couleur
-        self.color_widgets = []
-        for index, color in enumerate(self.settings["DISPLAYED_COLORS"]):
-            color_widget = QWidget()
-            color_widget.setLayout(QHBoxLayout())
+        products_list = list()
+        for IDs, info in get_dict_products().items():
+            product_widget = QWidget()
+            product_widget.setLayout(QHBoxLayout())
             # Label
-            text = self.settings["ASSOCIATED_NAME"][index]
-            color_label = QLabel(text)
-            color_label.setAlignment(Qt.AlignCenter)
-            color_label.setFont(QFont("Arial", 12, QFont.Bold))
-            # Ajoute une ombre 
-            shadow_effect = QGraphicsDropShadowEffect()
-            shadow_effect.setColor(QColor(0, 0, 0))
-            shadow_effect.setOffset(5, 6)
-            shadow_effect.setBlurRadius(2)
-            color_label.setGraphicsEffect(shadow_effect)
-            # initialize fond zone de texte
-            color_label.setStyleSheet(f"background-color: #{color[2:]};")
+            product = info.get("product")
+            manufacturer = info.get("manufacturer")
+            product_label = QLabel(f"[{manufacturer}] - {product}")
+            product_widget.id = int(f"{IDs[0]}{IDs[1]:04}")
+            product_widget.idVendor  = IDs[0]
+            product_widget.idProduct = IDs[1]
+            product_widget.button = QPushButton("Select")
 
-            color_button = QPushButton("Modifier")
-            color_widget.layout().addWidget(color_label)
-            color_widget.layout().addWidget(color_button)
-            self.color_layout.addWidget(color_widget)
-            self.color_widgets.append((color_label, color_button))
-
-        self.prev_colors_groupbox = QGroupBox("Couleurs du terminal")
-        self.prev_color_layout = QVBoxLayout()
-        self.prev_colors_groupbox.setLayout(self.prev_color_layout)
-
-        # Création des widgets de modification de couleur
-        self.prev_color_widgets = []
-        for index, color in enumerate(self.settings["PREVIEWED_COLORS"]):
-            color_widget = QWidget()
-            color_widget.setLayout(QHBoxLayout())
-            # Label
-            text = self.settings["ASSOCIATED_NAME"][index]
-            color_label = QLabel(text)
-            color_label.setAlignment(Qt.AlignCenter)
-            color_label.setFont(QFont("Arial", 12, QFont.Bold))
-            # Ajoute une ombre 
-            shadow_effect = QGraphicsDropShadowEffect()
-            shadow_effect.setColor(QColor(0, 0, 0))
-            shadow_effect.setOffset(5, 6)
-            shadow_effect.setBlurRadius(2)
-            color_label.setGraphicsEffect(shadow_effect)
-            # initialize fond zone de texte
-            color_label.setStyleSheet(f"background-color: #{color[2:]};")
-
-            prev_color_button = QPushButton("Modifier")
-            color_widget.layout().addWidget(color_label)
-            color_widget.layout().addWidget(prev_color_button)
-            self.prev_color_layout.addWidget(color_widget)
-            self.prev_color_widgets.append((color_label, prev_color_button))
-
+            # Display
+            product_widget.layout().addWidget(product_label)
+            product_widget.layout().addWidget(product_widget.button)
+            # Add to list
+            products_list.append(product_widget)
+            self.devices_layout.addWidget(product_widget)
         # Bouton Enregistrer
         self.save_button = QPushButton("Enregistrer")
         # Bouton Par Défaut
@@ -112,30 +80,24 @@ class CPViewerWidget(QWidget):
 
         # sublayout
         sublayout_1 = QHBoxLayout()
-        sublayout_1.addWidget(self.color_groupbox)
-        sublayout_1.addWidget(self.prev_colors_groupbox)
+        sublayout_1.addWidget(self.devices_groupbox)
         self.layout().addLayout(sublayout_1)
         
         # save / default
         self.layout().addWidget(self.save_button)
         self.layout().addWidget(self.default_button)
 
-        # Connexion des signaux color
-        for index in range(len(self.color_widgets)):
-            color_label  = self.color_widgets[index][0]
-            color_button = self.color_widgets[index][1]
-            color_button.clicked.connect(
-                partial(self.change_color, index, color_label)
-                )
-        # Connexion des signaux prev_color
-        for index in range(len(self.prev_color_widgets)):
-            color_label  = self.prev_color_widgets[index][0]
-            prev_color_button = self.prev_color_widgets[index][1]
-            prev_color_button.clicked.connect(
-                partial(self.change_prev_color, index, color_label)
-                )
         self.save_button.clicked.connect(self.save_settings)
         self.default_button.clicked.connect(self.default_settings)
+
+        for device in products_list:
+            device.button.clicked.connect(partial(self.say_carac, device))
+
+    def say_carac(self, dev):
+        print(dev.id)
+        print(dev.idVendor)
+        print(dev.idProduct)
+        listen_usb(idVendor=dev.idVendor, idProduct=dev.idProduct)
 
     def change_color(self, index, color_label):
         """

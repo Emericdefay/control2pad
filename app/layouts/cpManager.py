@@ -32,7 +32,6 @@ class cpTuning(sys.__class__):
 
     def get_cp_keys(self):
         lib_name = f"{str(hex(self._cpVID))[2:]}_{str(hex(self._cpPID,))[2:]}"
-        print(lib_name.upper())
         module = importlib.import_module(f'layouts.{lib_name.upper()}')
         return module.KEYS
 

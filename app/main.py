@@ -35,10 +35,10 @@ class MainWindow(QWidget):
         super().__init__()
         self.setWindowFlag(Qt.WindowMaximizeButtonHint, False)
         self.initUI()
+        self.startUI()
 
     def initUI(self):
         # définissez la largeur et la hauteur de la fenêtre
-
         self.setGeometry(100, 100, 1200, 610)
         self.max_height = 580
 
@@ -53,14 +53,21 @@ class MainWindow(QWidget):
         palette.setColor(QPalette.Background, QColor(76, 112, 140))
         self.setPalette(palette)
 
+    def startUI(self):
         # créez des layouts et ajoutez des widgets à partir de vos modules
         layout = QGridLayout(self)
         self.setLayout(layout)
+
+        # Créez une instance de QTabWidget et ajoutez-la au layout principal de votre fenêtre
+        self.tab_widget = QTabWidget(self)
+        self.tab_widget.tabCloseRequested.connect(lambda index: self.tab_widget.removeTab(index))
 
         self.parameters = QPushButton("ControlPads Viewer")
         self.parameters.clicked.connect(self.show_cpviewer_widget)
 
         self.layout().addWidget(self.parameters)
+
+        
 
     def show_cpviewer_widget(self):
         # Création de la fenêtre modale

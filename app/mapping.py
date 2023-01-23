@@ -1,4 +1,4 @@
-from tasks import std
+from scripts import std
 
 
 MAP = {

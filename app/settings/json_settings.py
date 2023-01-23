@@ -21,54 +21,6 @@ def load_settings():
 
 def write_default_json():
     return json.loads('''{
-    "DISPLAYED_COLORS": [
-        "0x000000",
-        "0x2986cc",
-        "0xcc0000",
-        "0xc90076",
-        "0x8fce00",
-        "0x6a329f",
-        "0xffe200",
-        "0xffffff"
-    ],
-    "PREVIEWED_COLORS": [
-        "0x000000",
-        "0x00ffff",
-        "0xff0000",
-        "0xffa0a0",
-        "0x00ff00",
-        "0x6ebbff",
-        "0xffff00",
-        "0xffffff"
-    ],
-    "ASSOCIATED_NAME": [
-        "BLACK",
-        "BLUE",
-        "RED",
-        "PINK",
-        "GREEN",
-        "PURPLE",
-        "YELLOW",
-        "WHITE" 
-    ],
-    "MESSAGES": [
-        "IST457I POSITIVE command COMMAND RESPONSE",
-        "IST450I INVALID command COMMAND SYNTAX",
-        "IST451I command COMMAND UNRECOGNIZED",
-        "IST452I parameter PARAMETER EXTRANEOUS",
-        "IST453I parameter PARAMETER VALUE value NOT VALID",
-        "N/A",
-        "IST792I NO SUCH SESSION EXISTS",
-        "N/A",
-        "IST454I COMMAND FAILED, INSUFFICIENT STORAGE",
-        "N/A",
-        "READY",
-        "IST455I parameters SESSIONS ENDED",
-        "IST456I keyword REQUIRED PARAMETER OMITTED",
-        "N/A",
-        "IST458I USS MESSAGE number NOT DEFINED"
-    ],
-    "INSTRUCTION": [
-        "===> Enter 'LOGON' followed by the TSO userid."
-    ]
+    "VID": 9494,
+    "PID": 123
 }''')
