@@ -8,12 +8,22 @@ sys.path.append(
     os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir)
 )
 
+from PyQt5.QtCore import (
+    Qt,
+    QThread,
+    pyqtSlot,
+    pyqtSignal,
+)
+
 from layouts import cpManager
 from mapping import MAP
 from settings import core_settings
 from settings.json_settings import load_settings
 
-def listen_usb(idVendor, idProduct):
+from widgets.cpshower import KeyButton
+
+
+def listen_usb(idVendor, idProduct, keyboard_map=None):
     set_endpoints = set()
 
     for dev in usb.core.find(find_all=True):
@@ -47,10 +57,13 @@ def listen_usb(idVendor, idProduct):
             print('WARNING : "is_kernel_driver_active" function not able on Windows')
         pass
 
-    KEYS = cpManager.get_cp_keys()
+    KEYS = cpManager.get_cp_keys(idVendor,idProduct)
     keys_values = list(KEYS.values())
     keys_keys = list(KEYS.keys())
     # while collected < attempts :
+
+    keys_obj_list = keyboard_map.get_keys_list()
+
     while True :
         try:
             data = dev.read(endpoint.bEndpointAddress, endpoint.wMaxPacketSize)
@@ -61,6 +74,9 @@ def listen_usb(idVendor, idProduct):
                 if core_settings.DEBUG:
                     print(key)
                 MAP.get(key)()
+                for k in keys_obj_list:
+                    if k.key_name == key:
+                        k.on_key_pressed()
         except usb.core.USBError as e:
             data = None
             if e.args == ('Operation timed out',):

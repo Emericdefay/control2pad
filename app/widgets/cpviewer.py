@@ -74,9 +74,9 @@ class CPViewerWidget(QWidget):
             products_list.append(product_widget)
             self.devices_layout.addWidget(product_widget)
         # Bouton Enregistrer
-        self.save_button = QPushButton("Enregistrer")
+        self.save_button = QPushButton("Save")
         # Bouton Par Défaut
-        self.default_button = QPushButton("Défaut")
+        self.default_button = QPushButton("Default")
 
         # sublayout
         sublayout_1 = QHBoxLayout()
@@ -94,70 +94,7 @@ class CPViewerWidget(QWidget):
             device.button.clicked.connect(partial(self.say_carac, device))
 
     def say_carac(self, dev):
-        print(dev.id)
-        print(dev.idVendor)
-        print(dev.idProduct)
         listen_usb(idVendor=dev.idVendor, idProduct=dev.idProduct)
-
-    def change_color(self, index, color_label):
-        """
-            Modifie la couleur à l'index spécifié dans 
-            la liste DISPLAYED_COLORS.
-
-        Args:
-            index (int): Index de la couleur à modifier.
-            color_label (QLabel): Widget de couleur à mettre à jour.
-
-        Returns:
-            bool: True si la couleur a été modifiée avec succès, False sinon.
-        """
-        # Récupérer la couleur actuelle à partir du widget de couleur
-        current_color = color_label.palette().color(QPalette.Window)
-
-        # Afficher une boîte de dialogue de sélection de couleur avec 
-        # la couleur actuelle en valeur initiale
-        color = QColorDialog.getColor(current_color)
-        # vérifiez si une couleur a été sélectionnée
-        if color.isValid():
-            try:
-                self.settings['DISPLAYED_COLORS'][index] = '0x' + \
-                                                            color.name()[1:]
-                self.color_widgets[index][0].setStyleSheet(
-                    f"background-color: {color.name()};"
-                )
-            except Exception as e:
-                print(e)
-                pass
-
-    def change_prev_color(self, index, color_label):
-        """
-            Modifie la couleur à l'index spécifié dans 
-            la liste DISPLAYED_COLORS.
-
-        Args:
-            index (int): Index de la couleur à modifier.
-            color_label (QLabel): Widget de couleur à mettre à jour.
-
-        Returns:
-            bool: True si la couleur a été modifiée avec succès, False sinon.
-        """
-        # Récupérer la couleur actuelle à partir du widget de couleur
-        current_color = color_label.palette().color(QPalette.Window)
-
-        # Afficher une boîte de dialogue de sélection de couleur avec la 
-        # couleur actuelle en valeur initiale
-        color = QColorDialog.getColor(current_color)
-        # vérifiez si une couleur a été sélectionnée
-        if color.isValid():
-            try:
-                self.settings['PREVIEWED_COLORS'][index] = '0x' + \
-                                                            color.name()[1:]
-                self.prev_color_widgets[index][0].setStyleSheet(
-                    f"background-color: {color.name()};"
-                )
-            except Exception as e:
-                print(e)
-                pass
 
     def save_settings(self):
         """Sauvegarde les paramètres de l'application dans un fichier JSON.
