@@ -34,11 +34,8 @@ from PyQt5.QtCore import (
     pyqtSignal,
 )
 
-
-
-
-from widgets.cpviewer import CPViewerWidget
 from widgets.cpselecter import CPHandler
+
 
 class MainWindow(QMainWindow):
 
@@ -52,7 +49,7 @@ class MainWindow(QMainWindow):
 
     def initUI(self):
         # définissez la largeur et la hauteur de la fenêtre
-        self.setGeometry(100, 100, 1200, 610)
+        self.setGeometry(100, 100, 600, 600)
         self.max_height = 580
 
         # Charger l'icône à partir d'un fichier
@@ -108,18 +105,6 @@ class MainWindow(QMainWindow):
 
         self.tray_icon.activated.connect(self.tray_double_clicked)
 
-    def show_cpviewer_widget(self):
-        # Création de la fenêtre modale
-        self.cpviewer_dialog = QDialog(self)
-        # Création de l'instance de SettingsWidget
-        self.cpviewer_widget = CPViewerWidget()
-        # Ajout de SettingsWidget à la fenêtre modale en utilisant un layout
-        self.cpviewer_dialog.setLayout(QVBoxLayout())
-        self.cpviewer_dialog.layout().addWidget(self.cpviewer_widget)
-        # Connexion du signal settingsSaved à la slot close_cpviewer_widget
-        self.cpviewer_widget.settingsSaved.connect(self.close_cpviewer_widget)
-        # Affichage de la fenêtre modale
-        self.cpviewer_dialog.exec_()
 
     @pyqtSlot()
     def close_cpviewer_widget(self):
@@ -144,16 +129,24 @@ class MainWindow(QMainWindow):
         self.tabs.tabBar().setTabButton(self.tabs.count()-1, QTabBar.RightSide, close_button)
         close_button.clicked.connect(lambda: self.remove_tab(new_tab))
 
-    def remove_tab(self, tab: QWidget):
+    def remove_tab(self, tab: CPHandler):
         nb_tabs = self.tabs.count()
         index = self.tabs.indexOf(tab)
         if nb_tabs > 1:
+            try:
+                # product available again
+                CPHandler.products_handled.remove((tab.idVendor, tab.idProduct))
+
+            except ValueError as e:
+                pass
+            # close threads
+            tab.closeWidget()
+            # remove tab
             self.tabs.removeTab(index)
             
     def closeEvent(self, event):
         if self.isMinimized():
             self.hide()
-            event.ignore()
             event.ignore()
     
     def changeEvent(self, event):

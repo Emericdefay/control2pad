@@ -36,7 +36,6 @@ from PyQt5.QtCore import (
     pyqtSignal,
 )
 
-from widgets.cpviewer import CPViewerWidget
 from core.cpgetter import get_dict_products
 from core.listener import listen_usb
 from widgets.cpshower import KeyboardWidget
@@ -44,15 +43,34 @@ from widgets.cpshower import KeyboardWidget
 
 
 class CPHandler(QWidget):
+
+    products_handled = list()
+
     def __init__(self):
         super().__init__()
-        self.layout = QVBoxLayout(self)
+        self.layout = QHBoxLayout(self)
         self.setLayout(self.layout)
+
+        self.setAutoFillBackground(True)
+        palette = QPalette()
+        palette.setColor(QPalette.Background, QColor(97, 122, 153))
+        self.setPalette(palette)
+
         self.button = QPushButton("Choose device")
+        self.button.setStyleSheet('max-width:100px;')
         self.button.clicked.connect(self.show_dialog)
         self.layout.addWidget(self.button)
         self.products_list = list()
-
+        self.cp_selected = None
+        self.idVendor = None
+        self.idProduct = None
+        
+    def closeWidget(self):
+        try:
+            self.cpshower.stopped = True
+            self.thread.close()
+        except AttributeError:
+            pass
 
     def show_dialog(self):
         dialog = QDialog()
@@ -74,7 +92,8 @@ class CPHandler(QWidget):
 
             obj.setText(item.label)
             obj.setData(Qt.UserRole, kwargs)
-            cp_list.addItem(obj)
+            if (item.idVendor, item.idProduct) not in CPHandler.products_handled:
+                cp_list.addItem(obj)
         # Ajout de la liste au layout du QDialog
         layout.addWidget(cp_list)
 
@@ -95,14 +114,19 @@ class CPHandler(QWidget):
         # Suppression du bouton
         self.button.hide()
         self.button.deleteLater()
-
-        if mode is not None:
+        if mode is not None and\
+           self.cp_selected is None:
             # retrieve data
+            self.cp_selected = mode
             data = mode.data(Qt.UserRole)
             idVendor = data.get('idVendor')
             idProduct = data.get('idProduct')
+            self.idVendor = idVendor
+            self.idProduct = idProduct
+            CPHandler.products_handled.append((idVendor, idProduct))
             # Draw map
             self.cpshower = KeyboardWidget(idVendor, idProduct)
+            print(self.cpshower)
             self.layout.addWidget(self.cpshower)
             # listen in another thread
             self.thread = ListenThread(idVendor, idProduct, self.cpshower)
@@ -136,3 +160,5 @@ class ListenThread(QThread):
     def run(self):
         listen_usb(self.idVendor, self.idProduct, self.keyboard_map)
         
+    def close(self):
+        self.quit()

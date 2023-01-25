@@ -23,7 +23,7 @@ from settings.json_settings import load_settings
 from widgets.cpshower import KeyButton
 
 
-def listen_usb(idVendor, idProduct, keyboard_map=None):
+def listen_usb(idVendor, idProduct, keyboard_map):
     set_endpoints = set()
 
     for dev in usb.core.find(find_all=True):
@@ -63,8 +63,9 @@ def listen_usb(idVendor, idProduct, keyboard_map=None):
     # while collected < attempts :
 
     keys_obj_list = keyboard_map.get_keys_list()
+    keys_obj_dict = {k.key_name: k for k in keys_obj_list}
 
-    while True :
+    while not keyboard_map.stopped:
         try:
             data = dev.read(endpoint.bEndpointAddress, endpoint.wMaxPacketSize)
             # print(data)
@@ -73,10 +74,10 @@ def listen_usb(idVendor, idProduct, keyboard_map=None):
                 key = keys_keys[index]
                 if core_settings.DEBUG:
                     print(key)
-                MAP.get(key)()
-                for k in keys_obj_list:
-                    if k.key_name == key:
-                        k.on_key_pressed()
+                # MAP.get(key)()
+                if key in keys_obj_dict:
+                    keys_obj_dict[key].on_key_pressed()
+                
         except usb.core.USBError as e:
             data = None
             if e.args == ('Operation timed out',):
@@ -84,6 +85,7 @@ def listen_usb(idVendor, idProduct, keyboard_map=None):
         except Exception as e:
             print(e)
             break
+    print("leave listener")
     # release the device
     usb.util.release_interface(dev, interface)
     try:

@@ -1,6 +1,7 @@
 from functools import partial
 import sys, os
 import time 
+import json
 
 from PyQt5.QtWidgets import (
     QApplication, 
@@ -28,14 +29,19 @@ from PyQt5.QtWidgets import (
     QTabBar,
     QSystemTrayIcon,
     QGraphicsColorizeEffect,
+    QLineEdit,
+    QComboBox,
+    QFileDialog,
 )
 from PyQt5.QtGui import (
     QPalette, 
     QColor, 
     QPixmap,    
     QTransform,
+    QRegion,
     QFont,
     QIcon,
+    QKeySequence,
     QPainter,
 )
 
@@ -64,14 +70,19 @@ class KeyboardWidget(QWidget):
         self.layout = QGridLayout()
         self.setLayout(self.layout)
         self.MAPPING = cpManager.get_cp_map(cpVID, cpPID)
+        self.cpVID = cpVID
+        self.cpPID = cpPID
         self.create_keys()
         self.setFixedSize(500, 500)
+        self.stopped = False
+        #color if needed
+        self.setAutoFillBackground(True)
 
 
     def create_keys(self):
         self.keys_list = list()
         for key, value in self.MAPPING.items():
-            button = KeyButton(value)
+            button = KeyButton(value, self.cpPID, self.cpVID)
             button.clicked.connect(partial(self.show_dialog, button))
             y, x = value['position']
             self.layout.addWidget(button, x, y, 1, value['lenght'])
@@ -81,28 +92,25 @@ class KeyboardWidget(QWidget):
         return self.keys_list
 
     def show_dialog(self, button):
-        dialog = QDialog(self)
-        dialog.setWindowTitle("Key pressed")
-        layout = QVBoxLayout(dialog)
-        label = QLabel(f"You pressed a key! ({button.key_name})")
-        layout.addWidget(label)
-        ok_button = QPushButton("OK")
-        ok_button.clicked.connect(dialog.accept)
-        layout.addWidget(ok_button)
+        print(button)
+        dialog = KeyConfigDialog(button, self.cpPID, self.cpVID)
         dialog.exec_()
 
 
 class KeyButton(QPushButton):
 
-    def __init__(self, value, parent=None):
+    def __init__(self, value, cpPID, cpVID, parent=None):
         super().__init__(parent)
         # Chemin d'accès
         self.path = os.path.dirname(os.path.realpath(__file__))
         self.path = os.path.abspath(self.path + "/../")
         self.imgs_path = os.path.join(self.path, "static", "imgs")
 
+        self.thread = None
+
         self.id = value['name']
         self.lenght = value['lenght']
+        self.cpPID, self.cpVID = cpPID, cpVID
 
         self.key_name = value['name']
         self.y, self.x = value['position']
@@ -112,7 +120,7 @@ class KeyButton(QPushButton):
         pixmap = QPixmap(os.path.join(self.imgs_path,"key.png"))
         if self.lenght > 1:
             pixmap = QPixmap(os.path.join(self.imgs_path,"key2.png"))
-        self.setIconSize(QSize(50*value['lenght'], 50))
+        self.setIconSize(QSize(50 * value['lenght'], 50))
 
         # Créer un objet QPainter pour dessiner sur l'image
         painter = QPainter(pixmap)
@@ -134,21 +142,18 @@ class KeyButton(QPushButton):
         self.thread = HighlightThread(self)
         self.thread.start()
 
+        self.thread_2 = ExecKeyThread(self, self.cpPID, self.cpVID)
+        self.thread_2.start()
+
 
 class HighlightThread(QThread):
     def __init__(self, key):
         super().__init__()
         self.key = key
-        self.path = os.path.dirname(os.path.realpath(__file__))
-        self.path = os.path.abspath(self.path + "/../")
-        self.imgs_path = os.path.join(self.path, "static", "imgs")
-        self.img_path = os.path.join(self.imgs_path,"key.png")
-        if self.key.lenght > 1:
-            self.img_path = os.path.join(self.imgs_path,"key2.png")
 
     def run(self):
         self.set_pressed_color()
-        time.sleep(1)
+        time.sleep(0.5)
         self.set_default_color()
 
     def set_default_color(self):
@@ -161,7 +166,172 @@ class HighlightThread(QThread):
     def set_pressed_color(self):
         # Créer un effet de filtre de saturation de couleur
         colorize_effect = QGraphicsColorizeEffect()
-        colorize_effect.setColor(QColor("red"))
+        colorize_effect.setColor(QColor("white"))
 
         # Appliquer l'effet au bouton
         self.key.setGraphicsEffect(colorize_effect)
+
+
+
+class KeyConfigDialog(QDialog):
+    def __init__(self, key, cpPID, cpVID, parent=None):
+        super().__init__(parent)
+        self.json_file = f"cp_{cpPID}_{cpVID}.json"
+        self.key_name = key.key_name
+        self.layout = QVBoxLayout(self)
+        self.setLayout(self.layout)
+        self.loaded = False
+
+        self.action_label = QLabel("Action for key '{}':".format(self.key_name))
+        self.layout.addWidget(self.action_label)
+
+        self.action_selector = QComboBox()
+        self.action_selector.addItems(["---", "Python script", "Program launcher", "Keyboard shortcut"])
+        self.action_selector.currentIndexChanged.connect(self.update_interface)
+        self.layout.addWidget(self.action_selector)
+
+        self.action_input = QLineEdit()
+        self.action_input.installEventFilter(self)
+        self.layout.addWidget(self.action_input)
+
+        self.save_button = QPushButton("Save")
+        self.save_button.clicked.connect(self.save_config)
+        self.layout.addWidget(self.save_button)
+
+        self.load_config()
+        self.save_config()
+
+    def save_config(self):
+        config = {}
+        try:
+            with open(self.json_file, 'r') as f:
+                config = json.load(f)
+        except json.decoder.JSONDecodeError :
+            pass
+        except FileNotFoundError :
+            pass
+        action = self.action_selector.currentText()
+        value = self.action_input.text()
+        if action == "Python script":
+            config[self.key_name] = {"type": "script", "value": value}
+        elif action == "Program launcher":
+            config[self.key_name] = {"type": "program", "value": value}
+        elif action == "Keyboard shortcut":
+            config[self.key_name] = {"type": "shortcut", "value": value}
+        
+        with open(self.json_file, 'w') as f:
+            json.dump(config, f)
+
+        self.close()
+
+    def update_interface(self):
+        if self.loaded :
+            action = self.action_selector.currentText()
+            if action == "Python script":
+                self.action_input.setReadOnly(False)
+                self.action_input.setPlaceholderText("Enter path to script")
+                self.action_input.setToolTip("Enter path to script")
+                self.action_input.setText("")
+                # self.action_input.returnPressed.connect(self.open_file_dialog)
+                file_name = self.open_file_dialog()
+                if file_name:
+                    self.action_input.setText(file_name)
+            elif action == "Program launcher":
+                self.action_input.setReadOnly(False)
+                self.action_input.setPlaceholderText("Enter path to program")
+                self.action_input.setToolTip("Enter path to program")
+                self.action_input.setText("")
+                # self.action_input.returnPressed.connect(self.open_file_dialog)
+                file_name = self.open_file_dialog()
+                if file_name:
+                    self.action_input.setText(file_name)
+            elif action == "Keyboard shortcut":
+                self.action_input.setReadOnly(True)
+                self.action_input.setPlaceholderText("Waiting for key pressed")
+                self.action_input.setFocus()
+                self.action_input.keyPressEvent = self.keyPressEvent
+
+    def keyPressEvent(self, event):
+        key = event.key()
+        self.action_input.setText(QKeySequence(key).toString())
+        self.action_input.setReadOnly(False)
+        self.action_input.keyPressEvent = None
+
+    def open_file_dialog(self):
+        current_action = self.action_selector.currentText()
+        if current_action == "Python script":
+            options = QFileDialog.Options()
+            options |= QFileDialog.ReadOnly
+            file_name, _ = QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()", "","Python Files (*.py);;All Files (*)", options=options)
+            if file_name:
+                return file_name
+        elif current_action == "Program launcher":
+            options = QFileDialog.Options()
+            options |= QFileDialog.ReadOnly
+            file_name, _ = QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()", "","All Files (*)", options=options)
+            if file_name:
+                return file_name
+        elif current_action == "Keyboard shortcut":
+            self.action_input.setReadOnly(True)
+            self.action_input.setText("Waiting for key pressed...")
+            self.action_input.keyPressEvent = self.get_key_pressed
+
+    def load_config(self):
+        ASSOCIATION = {
+            "script": "Python script",
+            "program": "Program launcher",
+            "shortcut": "Keyboard shortcut",
+        }
+        try:
+            with open(self.json_file, 'r') as f:
+                config = json.load(f)
+                for key, value in config.items():
+                    if key == self.key_name:
+                        self.action_input.setText(value.get("value"))
+                        self.action_selector.setCurrentText(ASSOCIATION[value.get("type")])
+        except FileNotFoundError:
+            pass
+        self.loaded = True
+
+
+class ExecKeyThread(QThread):
+    def __init__(self, key, cpPID, cpVID):
+        super().__init__()
+        self.key = key
+        self.json_file = f"cp_{cpPID}_{cpVID}.json"
+        self.ASSOCIATION = {
+            "script": "Python script",
+            "program": "Program launcher",
+            "shortcut": "Keyboard shortcut",
+        }
+        self.action_input = None
+        self.action_selector = None
+
+    def run(self):
+        self.load_config()
+        if not self.action_input or not self.action_selector:
+            print("Empty key binding")
+            self.quit()
+        if self.action_selector == "script":
+            import subprocess
+            subprocess.run(['python', self.action_input])
+        elif self.action_selector == "program":
+            import subprocess
+            subprocess.run(['open', self.action_input])
+        elif self.action_selector == "shortcut":
+            import pyautogui
+            if len(self.action_input)>1:
+                pyautogui.typewrite(self.action_input)
+            else:
+                pyautogui.hotkey(self.action_input)
+
+    def load_config(self):
+        try:
+            with open(self.json_file, 'r') as f:
+                config = json.load(f)
+                for key, value in config.items():
+                    if key == self.key.key_name:
+                        self.action_input = value.get("value")
+                        self.action_selector = value.get("type")
+        except FileNotFoundError:
+            pass
