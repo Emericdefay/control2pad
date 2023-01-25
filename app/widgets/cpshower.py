@@ -47,6 +47,7 @@ from PyQt5.QtGui import (
 
 from PyQt5.QtCore import (
     QSize,
+    QTimer,
     Qt,
     QThread,
     pyqtSlot,
@@ -57,6 +58,7 @@ from PyQt5.QtCore import (
 
 from layouts import cpManager
 # from widgets.cpselecter import ListenThread
+from settings.core_settings import OPTIONS
 
 
 class KeyboardWidget(QWidget):
@@ -186,7 +188,8 @@ class KeyConfigDialog(QDialog):
         self.layout.addWidget(self.action_label)
 
         self.action_selector = QComboBox()
-        self.action_selector.addItems(["---", "Python script", "Program launcher", "Keyboard shortcut"])
+        actions_availables = ['---'] + list(OPTIONS.values())
+        self.action_selector.addItems(actions_availables)
         self.action_selector.currentIndexChanged.connect(self.update_interface)
         self.layout.addWidget(self.action_selector)
 
@@ -212,12 +215,14 @@ class KeyConfigDialog(QDialog):
             pass
         action = self.action_selector.currentText()
         value = self.action_input.text()
-        if action == "Python script":
+        if action == OPTIONS['script']:
             config[self.key_name] = {"type": "script", "value": value}
-        elif action == "Program launcher":
+        elif action == OPTIONS['program']:
             config[self.key_name] = {"type": "program", "value": value}
-        elif action == "Keyboard shortcut":
+        elif action == OPTIONS['shortcut']:
             config[self.key_name] = {"type": "shortcut", "value": value}
+        elif action == OPTIONS['help']:
+            config[self.key_name] = {"type": "help", "value": value}
         
         with open(self.json_file, 'w') as f:
             json.dump(config, f)
@@ -227,7 +232,7 @@ class KeyConfigDialog(QDialog):
     def update_interface(self):
         if self.loaded :
             action = self.action_selector.currentText()
-            if action == "Python script":
+            if action == OPTIONS['script']:
                 self.action_input.setReadOnly(False)
                 self.action_input.setPlaceholderText("Enter path to script")
                 self.action_input.setToolTip("Enter path to script")
@@ -236,7 +241,7 @@ class KeyConfigDialog(QDialog):
                 file_name = self.open_file_dialog()
                 if file_name:
                     self.action_input.setText(file_name)
-            elif action == "Program launcher":
+            elif action == OPTIONS['program']:
                 self.action_input.setReadOnly(False)
                 self.action_input.setPlaceholderText("Enter path to program")
                 self.action_input.setToolTip("Enter path to program")
@@ -245,11 +250,14 @@ class KeyConfigDialog(QDialog):
                 file_name = self.open_file_dialog()
                 if file_name:
                     self.action_input.setText(file_name)
-            elif action == "Keyboard shortcut":
+            elif action == OPTIONS['shortcut']:
                 self.action_input.setReadOnly(True)
                 self.action_input.setPlaceholderText("Waiting for key pressed")
                 self.action_input.setFocus()
                 self.action_input.keyPressEvent = self.keyPressEvent
+            elif action == OPTIONS['help']:
+                self.action_input.setReadOnly(True)
+                self.action_input.setPlaceholderText("Helper displaying")
 
     def keyPressEvent(self, event):
         key = event.key()
@@ -259,42 +267,40 @@ class KeyConfigDialog(QDialog):
 
     def open_file_dialog(self):
         current_action = self.action_selector.currentText()
-        if current_action == "Python script":
+        if current_action == OPTIONS['script']:
             options = QFileDialog.Options()
             options |= QFileDialog.ReadOnly
             file_name, _ = QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()", "","Python Files (*.py);;All Files (*)", options=options)
             if file_name:
                 return file_name
-        elif current_action == "Program launcher":
+        elif current_action == OPTIONS['program']:
             options = QFileDialog.Options()
             options |= QFileDialog.ReadOnly
             file_name, _ = QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()", "","All Files (*)", options=options)
             if file_name:
                 return file_name
-        elif current_action == "Keyboard shortcut":
+        elif current_action == OPTIONS['shortcut']:
             self.action_input.setReadOnly(True)
             self.action_input.setText("Waiting for key pressed...")
             self.action_input.keyPressEvent = self.get_key_pressed
 
     def load_config(self):
-        ASSOCIATION = {
-            "script": "Python script",
-            "program": "Program launcher",
-            "shortcut": "Keyboard shortcut",
-        }
         try:
             with open(self.json_file, 'r') as f:
                 config = json.load(f)
                 for key, value in config.items():
                     if key == self.key_name:
                         self.action_input.setText(value.get("value"))
-                        self.action_selector.setCurrentText(ASSOCIATION[value.get("type")])
+                        self.action_selector.setCurrentText(OPTIONS[value.get("type")])
         except FileNotFoundError:
             pass
         self.loaded = True
 
 
 class ExecKeyThread(QThread):
+
+    help_dialog_open = False
+
     def __init__(self, key, cpPID, cpVID):
         super().__init__()
         self.key = key
@@ -324,6 +330,10 @@ class ExecKeyThread(QThread):
                 pyautogui.typewrite(self.action_input)
             else:
                 pyautogui.hotkey(self.action_input)
+        elif self.action_selector == "help":
+            import subprocess
+            from core import helper
+            subprocess.run(['python', os.path.realpath(helper.__file__), self.json_file])
 
     def load_config(self):
         try:

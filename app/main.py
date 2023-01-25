@@ -165,7 +165,6 @@ class MainWindow(QMainWindow):
         if reason == QSystemTrayIcon.DoubleClick:
             if self.isHidden():
                 self.show()
-
             else:
                 self.hide()
 
