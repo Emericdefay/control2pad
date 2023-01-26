@@ -12,6 +12,6 @@ if not exist "%current_path%env" (
 ) else (
     call "%current_path%env\Scripts\activate.bat"
 )
+
 rem Lancer le script Python
-echo %current_path%
 python "%current_path%launcher.py" %current_path%
