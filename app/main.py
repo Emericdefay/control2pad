@@ -2,36 +2,26 @@ import sys, os
 from PyQt5.QtWidgets import (
     QApplication, 
     QWidget, 
-    QGridLayout, 
     QMainWindow, 
-    QPushButton, 
     QVBoxLayout,
     QTabWidget,
-    QHBoxLayout,
-    QDialog,
     QStyle,
     QAction,
     qApp,
     QMenu,
-    QLabel,
-    QToolBar,
     QToolButton,
-    QTextEdit,
     QTabBar,
     QSystemTrayIcon,
 )
 from PyQt5.QtGui import (
     QPalette, 
     QColor, 
-    QFont,
     QIcon,
 )
 
 from PyQt5.QtCore import (
-    QSize,
     Qt,
     pyqtSlot,
-    pyqtSignal,
 )
 
 from widgets.cpselecter import CPHandler

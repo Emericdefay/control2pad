@@ -1,41 +1,17 @@
 import sys
-import os
 import json
-import time
+
 from PyQt5.QtWidgets import (
     QApplication, 
     QWidget, QTableWidget,QTableWidgetItem,
-    QGridLayout, 
     QMainWindow, 
-    QPushButton, 
     QVBoxLayout,
-    QTabWidget,
-    QHBoxLayout,
-    QDialog,
-    QStyle,
-    QAction,
-    qApp,
-    QMenu,
-    QLabel,
-    QToolBar,
-    QToolButton,
-    QTextEdit,
-    QTabBar,
-    QSystemTrayIcon,
 )
 from PyQt5.QtGui import (
-    QPalette, 
-    QColor, 
-    QFont,
     QIcon,
 )
-
 from PyQt5.QtCore import (
-    QSize,
-    Qt,
     QTimer,
-    pyqtSlot,
-    pyqtSignal,
 )
 
 
@@ -92,11 +68,7 @@ class HelperMainWindow(QMainWindow):
 
         self.setGeometry(100, 100, x, y)
 
-
     def initUI(self):
-        # définissez la largeur et la hauteur de la fenêtre
-        # self.setFixedSize(self.layout().sizeHint())
-
         # Charger l'icône à partir d'un fichier
         self.setWindowIcon(QIcon(':/icons/favicon'))
 

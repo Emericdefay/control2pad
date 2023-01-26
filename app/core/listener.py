@@ -8,19 +8,9 @@ sys.path.append(
     os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir)
 )
 
-from PyQt5.QtCore import (
-    Qt,
-    QThread,
-    pyqtSlot,
-    pyqtSignal,
-)
-
 from layouts import cpManager
-from mapping import MAP
 from settings import core_settings
 from settings.json_settings import load_settings
-
-from widgets.cpshower import KeyButton
 
 
 def listen_usb(idVendor, idProduct, keyboard_map):
@@ -74,7 +64,6 @@ def listen_usb(idVendor, idProduct, keyboard_map):
                 key = keys_keys[index]
                 if core_settings.DEBUG:
                     print(key)
-                # MAP.get(key)()
                 if key in keys_obj_dict:
                     keys_obj_dict[key].on_key_pressed()
                 

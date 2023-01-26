@@ -1,46 +1,23 @@
 from functools import partial
-import sys, os
+import os
 import time 
 import json
 
-import pyautogui
-
 from PyQt5.QtWidgets import (
-    QApplication, 
     QWidget, 
     QGridLayout, 
     QPushButton,
     QDialog,
-    QApplication, 
-    QWidget, 
-    QGridLayout, 
-    QMainWindow, 
-    QPushButton, 
     QVBoxLayout,
-    QTabWidget,
-    QHBoxLayout,
-    QDialog,
-    QStyle,
-    QAction,
-    qApp,
-    QMenu,
     QLabel,
-    QToolBar,
-    QToolButton,
-    QTextEdit,
-    QTabBar,
-    QSystemTrayIcon,
     QGraphicsColorizeEffect,
     QLineEdit,
     QComboBox,
     QFileDialog,
 )
 from PyQt5.QtGui import (
-    QPalette, 
     QColor, 
     QPixmap,    
-    QTransform,
-    QRegion,
     QFont,
     QIcon,
     QKeySequence,
@@ -49,18 +26,12 @@ from PyQt5.QtGui import (
 
 from PyQt5.QtCore import (
     QSize,
-    QTimer,
     Qt,
     QThread,
-    pyqtSlot,
-    pyqtSignal,
-    QMetaObject,
-    Q_ARG,
 )
 
-from layouts import cpManager
-# from widgets.cpselecter import ListenThread
 from settings.core_settings import OPTIONS
+from layouts import cpManager
 
 
 class KeyboardWidget(QWidget):
@@ -344,7 +315,7 @@ class ExecKeyThread(QThread):
                 cmd = f'start cmd /k "{self.action_input}"'
                 os.system(cmd)
         elif self.action_selector == "shortcut":
-            # import pyautogui
+            import pyautogui
             if len(self.action_input)>1:
                 pyautogui.typewrite(self.action_input)
             else:

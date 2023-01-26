@@ -1,45 +1,25 @@
-import sys, os
 from PyQt5.QtWidgets import (
-    QApplication, 
     QWidget, 
-    QGridLayout, 
-    QMainWindow, 
     QListWidget,
     QPushButton, 
     QVBoxLayout,
-    QTabWidget,
     QHBoxLayout,
     QDialog,
     QListWidgetItem,
-    QStyle,
-    QAction,
-    qApp,
-    QMenu,
-    QLabel,
-    QToolBar,
-    QToolButton,
-    QTextEdit,
-    QTabBar,
-    QSystemTrayIcon,
 )
 from PyQt5.QtGui import (
     QPalette, 
     QColor, 
-    QFont,
-    QIcon,
 )
 
 from PyQt5.QtCore import (
     Qt,
     QThread,
-    pyqtSlot,
-    pyqtSignal,
 )
 
 from core.cpgetter import get_dict_products
 from core.listener import listen_usb
 from widgets.cpshower import KeyboardWidget
-
 
 
 class CPHandler(QWidget):
@@ -131,7 +111,6 @@ class CPHandler(QWidget):
             # listen in another thread
             self.thread = ListenThread(idVendor, idProduct, self.cpshower)
             self.thread.start()
-
 
     def generate_list(self):
         self.products_list = list()
