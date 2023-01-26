@@ -3,6 +3,8 @@ import sys, os
 import time 
 import json
 
+import pyautogui
+
 from PyQt5.QtWidgets import (
     QApplication, 
     QWidget, 
@@ -179,6 +181,10 @@ class KeyConfigDialog(QDialog):
     def __init__(self, key, cpPID, cpVID, parent=None):
         super().__init__(parent)
         self.json_file = f"cp_{cpPID}_{cpVID}.json"
+        self.path = os.path.dirname(os.path.realpath(__file__))
+        self.path = os.path.abspath(self.path + "/../" + "/../")
+        self.json_file = os.path.join(self.path, self.json_file)
+
         self.key_name = key.key_name
         self.layout = QVBoxLayout(self)
         self.setLayout(self.layout)
@@ -200,6 +206,7 @@ class KeyConfigDialog(QDialog):
         self.save_button = QPushButton("Save")
         self.save_button.clicked.connect(self.save_config)
         self.layout.addWidget(self.save_button)
+
 
         self.load_config()
         self.save_config()
@@ -223,7 +230,8 @@ class KeyConfigDialog(QDialog):
             config[self.key_name] = {"type": "shortcut", "value": value}
         elif action == OPTIONS['help']:
             config[self.key_name] = {"type": "help", "value": value}
-        
+
+
         with open(self.json_file, 'w') as f:
             json.dump(config, f)
 
@@ -312,6 +320,9 @@ class ExecKeyThread(QThread):
         }
         self.action_input = None
         self.action_selector = None
+        self.path = os.path.dirname(os.path.realpath(__file__))
+        self.path = os.path.abspath(self.path + "/../" + "/../")
+        self.json_file = os.path.join(self.path, self.json_file)
 
     def run(self):
         self.load_config()
@@ -325,7 +336,7 @@ class ExecKeyThread(QThread):
             import subprocess
             subprocess.run(['open', self.action_input])
         elif self.action_selector == "shortcut":
-            import pyautogui
+            # import pyautogui
             if len(self.action_input)>1:
                 pyautogui.typewrite(self.action_input)
             else:
