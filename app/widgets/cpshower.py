@@ -334,7 +334,15 @@ class ExecKeyThread(QThread):
             subprocess.run(['python', self.action_input])
         elif self.action_selector == "program":
             import subprocess
-            subprocess.run(['open', self.action_input])
+            try:
+                subprocess.run(['open', f'{self.action_input}'])
+            except FileNotFoundError as e:
+                cmd = f'{self.action_input}'
+                os.system(cmd)
+                subprocess.Popen(f'{self.action_input}', stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            except ValueError as e:
+                cmd = f'start cmd /k "{self.action_input}"'
+                os.system(cmd)
         elif self.action_selector == "shortcut":
             # import pyautogui
             if len(self.action_input)>1:
